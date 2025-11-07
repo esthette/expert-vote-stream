@@ -4,9 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminCreate = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const AdminCreate = () => {
   const [objectsCount, setObjectsCount] = useState("5");
   const [method, setMethod] = useState("ranking");
   const [sessionName, setSessionName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const methods = [
     { id: "ranking", name: "Ранжирование с расчетом коэффициента конкордации" },
@@ -22,7 +24,7 @@ const AdminCreate = () => {
     { id: "churchman", name: "Последовательное сравнение (метод Черчмена-Акоффа)" },
   ];
 
-  const handleCreateSession = () => {
+  const handleCreateSession = async () => {
     if (!sessionName.trim()) {
       toast.error("Введите название сессии");
       return;
@@ -38,9 +40,46 @@ const AdminCreate = () => {
       return;
     }
 
-    // TODO: Create session in database
-    toast.success("Сессия создана успешно!");
-    // navigate to session page
+    setIsCreating(true);
+
+    try {
+      // Generate session code
+      const { data: codeData, error: codeError } = await supabase.rpc('generate_session_code');
+      
+      if (codeError) {
+        console.error('Error generating code:', codeError);
+        toast.error("Ошибка при создании кода сессии");
+        return;
+      }
+
+      // Create session
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          session_name: sessionName,
+          session_code: codeData,
+          experts_count: parseInt(expertsCount),
+          objects_count: parseInt(objectsCount),
+          method: method,
+          status: 'waiting'
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        console.error('Error creating session:', sessionError);
+        toast.error("Ошибка при создании сессии");
+        return;
+      }
+
+      toast.success("Сессия создана успешно!");
+      navigate(`/admin/session/${session.id}`);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast.error("Непредвиденная ошибка");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -119,8 +158,16 @@ const AdminCreate = () => {
               onClick={handleCreateSession}
               size="lg"
               className="w-full mt-8"
+              disabled={isCreating}
             >
-              Создать сессию
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Создание...
+                </>
+              ) : (
+                "Создать сессию"
+              )}
             </Button>
           </div>
         </Card>
