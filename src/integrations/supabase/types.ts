@@ -14,13 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      experts: {
+        Row: {
+          has_voted: boolean | null
+          id: string
+          joined_at: string | null
+          nickname: string
+          session_id: string
+        }
+        Insert: {
+          has_voted?: boolean | null
+          id?: string
+          joined_at?: string | null
+          nickname: string
+          session_id: string
+        }
+        Update: {
+          has_voted?: boolean | null
+          id?: string
+          joined_at?: string | null
+          nickname?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      objects: {
+        Row: {
+          created_at: string | null
+          id: string
+          object_name: string
+          object_order: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          object_name: string
+          object_order: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          object_name?: string
+          object_order?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objects_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string | null
+          experts_count: number
+          id: string
+          method: string
+          objects_count: number
+          session_code: string
+          session_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          experts_count: number
+          id?: string
+          method: string
+          objects_count: number
+          session_code: string
+          session_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          experts_count?: number
+          id?: string
+          method?: string
+          objects_count?: number
+          session_code?: string
+          session_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      votes: {
+        Row: {
+          created_at: string | null
+          expert_id: string
+          id: string
+          object_id: string
+          session_id: string
+          vote_value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id: string
+          id?: string
+          object_id: string
+          session_id: string
+          vote_value: Json
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string
+          id?: string
+          object_id?: string
+          session_id?: string
+          vote_value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "objects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_session_code: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
