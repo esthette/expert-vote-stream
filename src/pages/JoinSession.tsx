@@ -1,18 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const JoinSession = () => {
   const navigate = useNavigate();
-  const [sessionId, setSessionId] = useState("");
+  const { sessionCode: urlSessionCode } = useParams();
+  const [sessionId, setSessionId] = useState(urlSessionCode || "");
   const [nickname, setNickname] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleJoin = () => {
+  useEffect(() => {
+    if (urlSessionCode) {
+      setSessionId(urlSessionCode);
+    }
+  }, [urlSessionCode]);
+
+  const handleJoin = async () => {
     if (!sessionId.trim()) {
       toast.error("Введите ID сессии");
       return;
@@ -23,9 +32,44 @@ const JoinSession = () => {
       return;
     }
 
-    // TODO: Join session
-    toast.success("Вы присоединились к сессии!");
-    // navigate to voting page
+    setLoading(true);
+
+    try {
+      // Find session by code
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('session_code', sessionId)
+        .single();
+
+      if (sessionError || !session) {
+        toast.error("Сессия не найдена");
+        setLoading(false);
+        return;
+      }
+
+      // Create expert record
+      const { error: expertError } = await supabase
+        .from('experts')
+        .insert({
+          session_id: session.id,
+          nickname: nickname
+        });
+
+      if (expertError) {
+        console.error('Error joining session:', expertError);
+        toast.error("Ошибка при присоединении к сессии");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Вы присоединились к сессии!");
+      navigate(`/voting/${session.id}`);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Произошла ошибка");
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,8 +117,9 @@ const JoinSession = () => {
               onClick={handleJoin}
               size="lg"
               className="w-full mt-8"
+              disabled={loading}
             >
-              Присоединиться
+              {loading ? "Присоединение..." : "Присоединиться"}
             </Button>
           </div>
 

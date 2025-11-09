@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import AdminCreate from "./pages/AdminCreate";
 import AdminSession from "./pages/AdminSession";
 import JoinSession from "./pages/JoinSession";
+import Voting from "./pages/Voting";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,8 @@ const App = () => (
           <Route path="/admin/create" element={<AdminCreate />} />
           <Route path="/admin/session/:sessionId" element={<AdminSession />} />
           <Route path="/join" element={<JoinSession />} />
+          <Route path="/join/:sessionCode" element={<JoinSession />} />
+          <Route path="/voting/:sessionId" element={<Voting />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
