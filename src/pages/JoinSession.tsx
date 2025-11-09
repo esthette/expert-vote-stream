@@ -35,6 +35,16 @@ const JoinSession = () => {
     setLoading(true);
 
     try {
+      // Sign in anonymously to get a user ID
+      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      
+      if (authError || !authData.user) {
+        console.error('Error signing in:', authError);
+        toast.error("Ошибка аутентификации");
+        setLoading(false);
+        return;
+      }
+
       // Find session by code
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
@@ -48,12 +58,13 @@ const JoinSession = () => {
         return;
       }
 
-      // Create expert record
+      // Create expert record with user_id
       const { error: expertError } = await supabase
         .from('experts')
         .insert({
           session_id: session.id,
-          nickname: nickname
+          nickname: nickname,
+          user_id: authData.user.id
         });
 
       if (expertError) {
