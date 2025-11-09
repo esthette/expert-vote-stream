@@ -43,12 +43,23 @@ const AdminCreate = () => {
     setIsCreating(true);
 
     try {
+      // Sign in anonymously to get a user ID
+      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      
+      if (authError || !authData.user) {
+        console.error('Error signing in:', authError);
+        toast.error("Ошибка аутентификации");
+        setIsCreating(false);
+        return;
+      }
+
       // Generate session code
       const { data: codeData, error: codeError } = await supabase.rpc('generate_session_code');
       
       if (codeError) {
         console.error('Error generating code:', codeError);
         toast.error("Ошибка при создании кода сессии");
+        setIsCreating(false);
         return;
       }
 
@@ -61,7 +72,8 @@ const AdminCreate = () => {
           experts_count: parseInt(expertsCount),
           objects_count: parseInt(objectsCount),
           method: method,
-          status: 'waiting'
+          status: 'waiting',
+          created_by: authData.user.id
         })
         .select()
         .single();
@@ -69,6 +81,7 @@ const AdminCreate = () => {
       if (sessionError) {
         console.error('Error creating session:', sessionError);
         toast.error("Ошибка при создании сессии");
+        setIsCreating(false);
         return;
       }
 
