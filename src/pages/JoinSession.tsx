@@ -7,6 +7,19 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Input validation schemas
+const nicknameSchema = z.string()
+  .trim()
+  .min(2, 'Минимум 2 символа')
+  .max(50, 'Максимум 50 символов')
+  .regex(/^[a-zA-Zа-яА-Я0-9\s-]+$/, 'Разрешены только буквы, цифры, пробелы и дефисы');
+
+const sessionCodeSchema = z.string()
+  .trim()
+  .length(6, 'Код сессии должен содержать 6 символов')
+  .regex(/^\d{6}$/, 'Код сессии должен содержать только цифры');
 
 const JoinSession = () => {
   const navigate = useNavigate();
@@ -22,13 +35,17 @@ const JoinSession = () => {
   }, [urlSessionCode]);
 
   const handleJoin = async () => {
-    if (!sessionId.trim()) {
-      toast.error("Введите ID сессии");
+    // Validate session code
+    const sessionCodeResult = sessionCodeSchema.safeParse(sessionId);
+    if (!sessionCodeResult.success) {
+      toast.error(sessionCodeResult.error.errors[0].message);
       return;
     }
 
-    if (!nickname.trim()) {
-      toast.error("Введите ваш никнейм");
+    // Validate nickname
+    const nicknameResult = nicknameSchema.safeParse(nickname);
+    if (!nicknameResult.success) {
+      toast.error(nicknameResult.error.errors[0].message);
       return;
     }
 
@@ -58,12 +75,12 @@ const JoinSession = () => {
         return;
       }
 
-      // Create expert record with user_id
+      // Create expert record with user_id (using validated values)
       const { error: expertError } = await supabase
         .from('experts')
         .insert({
           session_id: session.id,
-          nickname: nickname,
+          nickname: nicknameResult.data,
           user_id: authData.user.id
         });
 

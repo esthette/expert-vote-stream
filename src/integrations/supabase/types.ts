@@ -21,7 +21,7 @@ export type Database = {
           joined_at: string | null
           nickname: string
           session_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           has_voted?: boolean | null
@@ -29,7 +29,7 @@ export type Database = {
           joined_at?: string | null
           nickname: string
           session_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           has_voted?: boolean | null
@@ -37,7 +37,7 @@ export type Database = {
           joined_at?: string | null
           nickname?: string
           session_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

@@ -8,6 +8,20 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Input validation schemas
+const sessionNameSchema = z.string()
+  .trim()
+  .min(3, 'Минимум 3 символа')
+  .max(100, 'Максимум 100 символов');
+
+const countSchema = z.number()
+  .int('Должно быть целое число')
+  .min(2, 'Минимум 2');
+
+const expertsCountSchema = countSchema.max(50, 'Максимум 50 экспертов');
+const objectsCountSchema = countSchema.max(20, 'Максимум 20 объектов');
 
 const AdminCreate = () => {
   const navigate = useNavigate();
@@ -25,18 +39,24 @@ const AdminCreate = () => {
   ];
 
   const handleCreateSession = async () => {
-    if (!sessionName.trim()) {
-      toast.error("Введите название сессии");
+    // Validate session name
+    const sessionNameResult = sessionNameSchema.safeParse(sessionName);
+    if (!sessionNameResult.success) {
+      toast.error(sessionNameResult.error.errors[0].message);
       return;
     }
 
-    if (parseInt(expertsCount) < 2) {
-      toast.error("Минимум 2 эксперта");
+    // Validate experts count
+    const expertsCountResult = expertsCountSchema.safeParse(parseInt(expertsCount));
+    if (!expertsCountResult.success) {
+      toast.error(expertsCountResult.error.errors[0].message);
       return;
     }
 
-    if (parseInt(objectsCount) < 2) {
-      toast.error("Минимум 2 объекта");
+    // Validate objects count
+    const objectsCountResult = objectsCountSchema.safeParse(parseInt(objectsCount));
+    if (!objectsCountResult.success) {
+      toast.error(objectsCountResult.error.errors[0].message);
       return;
     }
 
@@ -63,14 +83,14 @@ const AdminCreate = () => {
         return;
       }
 
-      // Create session
+      // Create session (using validated values)
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
-          session_name: sessionName,
+          session_name: sessionNameResult.data,
           session_code: codeData,
-          experts_count: parseInt(expertsCount),
-          objects_count: parseInt(objectsCount),
+          experts_count: expertsCountResult.data,
+          objects_count: objectsCountResult.data,
           method: method,
           status: 'waiting',
           created_by: authData.user.id
