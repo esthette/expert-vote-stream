@@ -38,6 +38,7 @@ const Voting = () => {
   const [loading, setLoading] = useState(true);
   const [objectNames, setObjectNames] = useState<string[]>([]);
   const [isCreatingObjects, setIsCreatingObjects] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -67,6 +68,9 @@ const Voting = () => {
         }
 
         setSession(sessionData);
+        
+        // Check if user is admin
+        setIsAdmin(sessionData.created_by === user.id);
 
         // Fetch expert record
         const { data: expertData, error: expertError } = await supabase
@@ -113,7 +117,7 @@ const Voting = () => {
     fetchData();
 
     // Subscribe to session status changes
-    const channel = supabase
+    const sessionChannel = supabase
       .channel(`session-status-${sessionId}`)
       .on(
         'postgres_changes',
@@ -129,8 +133,35 @@ const Voting = () => {
       )
       .subscribe();
 
+    // Subscribe to objects changes
+    const objectsChannel = supabase
+      .channel(`objects-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'objects',
+          filter: `session_id=eq.${sessionId}`
+        },
+        async () => {
+          // Refetch objects when new ones are created
+          const { data: objectsData } = await supabase
+            .from('objects')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('object_order', { ascending: true });
+          
+          if (objectsData) {
+            setObjects(objectsData);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(sessionChannel);
+      supabase.removeChannel(objectsChannel);
     };
   }, [sessionId, navigate]);
 
@@ -222,7 +253,7 @@ const Voting = () => {
             </div>
           )}
 
-          {session.status === 'voting' && objects.length === 0 && (
+          {session.status === 'voting' && objects.length === 0 && isAdmin && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-4">
@@ -255,6 +286,17 @@ const Voting = () => {
                   {isCreatingObjects ? "Создание..." : "Создать объекты"}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {session.status === 'voting' && objects.length === 0 && !isAdmin && (
+            <div className="text-center py-8">
+              <p className="text-lg text-muted-foreground">
+                Ожидание создания объектов...
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Администратор сейчас создаёт объекты для оценки
+              </p>
             </div>
           )}
 
