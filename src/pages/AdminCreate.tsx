@@ -63,13 +63,12 @@ const AdminCreate = () => {
     setIsCreating(true);
 
     try {
-      // Sign in anonymously to get a user ID
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (authError || !authData.user) {
-        console.error('Error signing in:', authError);
-        toast.error("Ошибка аутентификации");
-        setIsCreating(false);
+      if (!session) {
+        toast.error("Для создания сессии необходимо войти в систему");
+        navigate('/auth');
         return;
       }
 
@@ -84,7 +83,7 @@ const AdminCreate = () => {
       }
 
       // Create session (using validated values)
-      const { data: session, error: sessionError } = await supabase
+      const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           session_name: sessionNameResult.data,
@@ -93,7 +92,7 @@ const AdminCreate = () => {
           objects_count: objectsCountResult.data,
           method: method,
           status: 'waiting',
-          created_by: authData.user.id
+          created_by: session.user.id
         })
         .select()
         .single();
@@ -106,7 +105,7 @@ const AdminCreate = () => {
       }
 
       toast.success("Сессия создана успешно!");
-      navigate(`/admin/session/${session.id}`);
+      navigate(`/admin/session/${sessionData.id}`);
     } catch (error) {
       console.error('Unexpected error:', error);
       toast.error("Непредвиденная ошибка");

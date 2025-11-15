@@ -52,13 +52,12 @@ const JoinSession = () => {
     setLoading(true);
 
     try {
-      // Sign in anonymously to get a user ID
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      // Check if user is authenticated
+      const { data: { session: authSession } } = await supabase.auth.getSession();
       
-      if (authError || !authData.user) {
-        console.error('Error signing in:', authError);
-        toast.error("Ошибка аутентификации");
-        setLoading(false);
+      if (!authSession) {
+        toast.error("Для присоединения к сессии необходимо войти в систему");
+        navigate('/auth');
         return;
       }
 
@@ -81,7 +80,7 @@ const JoinSession = () => {
         .insert({
           session_id: session.id,
           nickname: nicknameResult.data,
-          user_id: authData.user.id
+          user_id: authSession.user.id
         });
 
       if (expertError) {
