@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { z } from "zod";
 
 interface Session {
   id: string;
@@ -168,9 +169,27 @@ const Voting = () => {
   const handleCreateObjects = async () => {
     if (!session || !expert) return;
 
-    // Validate that all objects have names
-    const validNames = objectNames.filter(name => name.trim() !== '');
-    if (validNames.length !== session.objects_count) {
+    // Define validation schema for object names
+    const objectNameSchema = z.string()
+      .trim()
+      .min(1, 'Имя объекта не может быть пустым')
+      .max(200, 'Имя объекта должно быть короче 200 символов')
+      .regex(/^[а-яА-Яa-zA-Z0-9\s\-.,()]+$/, 'Недопустимые символы в имени объекта');
+
+    // Validate all object names
+    const validationResults = objectNames.map((name, index) => ({
+      index,
+      result: objectNameSchema.safeParse(name)
+    }));
+
+    const firstError = validationResults.find(v => !v.result.success);
+    if (firstError) {
+      toast.error(`Объект ${firstError.index + 1}: ${firstError.result.error.errors[0].message}`);
+      return;
+    }
+
+    // Check all objects have names
+    if (validationResults.length !== session.objects_count) {
       toast.error(`Необходимо указать все ${session.objects_count} объектов`);
       return;
     }
@@ -178,7 +197,7 @@ const Voting = () => {
     setIsCreatingObjects(true);
 
     try {
-      // Create objects
+      // Create objects with validated names
       const objectsToInsert = objectNames.map((name, index) => ({
         session_id: session.id,
         object_name: name.trim(),
