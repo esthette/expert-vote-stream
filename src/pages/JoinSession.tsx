@@ -85,7 +85,12 @@ const JoinSession = () => {
 
       if (expertError) {
         console.error('Error joining session:', expertError);
-        toast.error("Ошибка при присоединении к сессии");
+        // Check for unique constraint violation
+        if (expertError.code === '23505') {
+          toast.error("Вы уже присоединились к этой сессии");
+        } else {
+          toast.error("Ошибка при присоединении к сессии");
+        }
         setLoading(false);
         return;
       }

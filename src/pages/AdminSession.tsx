@@ -30,6 +30,14 @@ const AdminSession = () => {
     if (!sessionId) return;
 
     const fetchSession = async () => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Необходима авторизация");
+        navigate('/auth');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('sessions')
         .select('*')
@@ -39,6 +47,13 @@ const AdminSession = () => {
       if (error) {
         console.error('Error fetching session:', error);
         toast.error("Ошибка загрузки сессии");
+        navigate('/');
+        return;
+      }
+
+      // Verify user is the session creator
+      if (data.created_by !== user.id) {
+        toast.error("У вас нет доступа к этой сессии");
         navigate('/');
         return;
       }
