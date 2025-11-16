@@ -7,6 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
+import { RankingVoting } from "@/components/voting/RankingVoting";
+import { DirectVoting } from "@/components/voting/DirectVoting";
+import { PairwiseVoting } from "@/components/voting/PairwiseVoting";
+import { ChurchmanVoting } from "@/components/voting/ChurchmanVoting";
 
 interface Session {
   id: string;
@@ -321,25 +325,34 @@ const Voting = () => {
 
           {session.status === 'voting' && objects.length > 0 && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Объекты для оценки</h2>
-                <div className="space-y-2">
-                  {objects.map((obj, index) => (
-                    <div
-                      key={obj.id}
-                      className="p-4 bg-secondary/20 rounded-lg flex items-center gap-3"
-                    >
-                      <span className="font-medium text-lg">{index + 1}.</span>
-                      <span className="text-lg">{obj.object_name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="text-center py-4">
-                <p className="text-muted-foreground">
-                  Голосование будет доступно в следующей версии
-                </p>
-              </div>
+              {session.method === 'ranking' && (
+                <RankingVoting 
+                  objects={objects} 
+                  expertId={expert.id} 
+                  sessionId={session.id}
+                />
+              )}
+              {session.method === 'direct' && (
+                <DirectVoting 
+                  objects={objects} 
+                  expertId={expert.id} 
+                  sessionId={session.id}
+                />
+              )}
+              {session.method === 'pairwise' && (
+                <PairwiseVoting 
+                  objects={objects} 
+                  expertId={expert.id} 
+                  sessionId={session.id}
+                />
+              )}
+              {session.method === 'churchman' && (
+                <ChurchmanVoting 
+                  objects={objects} 
+                  expertId={expert.id} 
+                  sessionId={session.id}
+                />
+              )}
             </div>
           )}
         </Card>
