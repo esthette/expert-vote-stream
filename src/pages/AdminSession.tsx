@@ -181,19 +181,41 @@ const AdminSession = () => {
                 </div>
               </div>
 
-              <div className="pt-4">
-                <Button
-                  onClick={handleStartVoting}
-                  size="lg"
-                  className="w-full"
-                  disabled={expertsJoined < 2}
-                >
-                  Начать голосование
-                </Button>
-                {expertsJoined < 2 && (
-                  <p className="text-sm text-muted-foreground text-center mt-2">
-                    Ожидание экспертов...
-                  </p>
+              <div className="pt-4 space-y-2">
+                {session.status === 'waiting' ? (
+                  <>
+                    <Button
+                      onClick={handleStartVoting}
+                      size="lg"
+                      className="w-full"
+                      disabled={expertsJoined < 2}
+                    >
+                      Начать голосование
+                    </Button>
+                    {expertsJoined < 2 && (
+                      <p className="text-sm text-muted-foreground text-center mt-2">
+                        Ожидание экспертов...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => navigate(`/voting/${session.id}`)}
+                      size="lg"
+                      className="w-full"
+                      variant="outline"
+                    >
+                      Просмотр голосования
+                    </Button>
+                    <Button
+                      onClick={() => navigate(`/results/${session.id}`)}
+                      size="lg"
+                      className="w-full"
+                    >
+                      Посмотреть результаты
+                    </Button>
+                  </>
                 )}
               </div>
             </div>

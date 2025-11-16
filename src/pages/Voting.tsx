@@ -323,7 +323,18 @@ const Voting = () => {
             </div>
           )}
 
-          {session.status === 'voting' && objects.length > 0 && (
+          {session.status === 'voting' && objects.length > 0 && !expert && isAdmin && (
+            <div className="text-center py-8">
+              <p className="text-lg text-muted-foreground">
+                Администраторы не могут голосовать
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Вы можете только наблюдать за процессом голосования
+              </p>
+            </div>
+          )}
+
+          {session.status === 'voting' && objects.length > 0 && expert && (
             <div className="space-y-6">
               {session.method === 'ranking' && (
                 <RankingVoting 
