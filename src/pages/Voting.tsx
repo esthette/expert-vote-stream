@@ -323,7 +323,7 @@ const Voting = () => {
             </div>
           )}
 
-          {session.status === 'voting' && objects.length > 0 && !expert && isAdmin && (
+          {session.status === 'voting' && objects.length > 0 && isAdmin && (
             <div className="text-center py-8">
               <p className="text-lg text-muted-foreground">
                 Администраторы не могут голосовать
@@ -334,7 +334,7 @@ const Voting = () => {
             </div>
           )}
 
-          {session.status === 'voting' && objects.length > 0 && expert && (
+          {session.status === 'voting' && objects.length > 0 && expert && !isAdmin && (
             <div className="space-y-6">
               {session.method === 'ranking' && (
                 <RankingVoting 
