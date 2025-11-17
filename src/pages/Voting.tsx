@@ -26,6 +26,7 @@ interface Expert {
   id: string;
   nickname: string;
   user_id: string;
+  has_voted: boolean | null;
 }
 
 interface VotingObject {
@@ -44,6 +45,7 @@ const Voting = () => {
   const [objectNames, setObjectNames] = useState<string[]>([]);
   const [isCreatingObjects, setIsCreatingObjects] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [allExperts, setAllExperts] = useState<Expert[]>([]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -93,6 +95,19 @@ const Voting = () => {
         }
 
         setExpert(expertData);
+
+        // Fetch all experts for admin view
+        const { data: allExpertsData, error: allExpertsError } = await supabase
+          .from('experts')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('joined_at', { ascending: true });
+
+        if (allExpertsError) {
+          console.error('Error fetching all experts:', allExpertsError);
+        } else if (allExpertsData) {
+          setAllExperts(allExpertsData);
+        }
 
         // Fetch objects
         const { data: objectsData, error: objectsError } = await supabase
@@ -164,9 +179,41 @@ const Voting = () => {
       )
       .subscribe();
 
+    // Subscribe to experts changes (voting status)
+    const expertsChannel = supabase
+      .channel(`experts-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'experts',
+          filter: `session_id=eq.${sessionId}`
+        },
+        async () => {
+          // Refetch experts when voting status changes
+          const { data: allExpertsData } = await supabase
+            .from('experts')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('joined_at', { ascending: true });
+          
+          if (allExpertsData) {
+            setAllExperts(allExpertsData);
+            
+            // Check if all experts have voted and redirect admin
+            if (isAdmin && allExpertsData.every(e => e.has_voted)) {
+              navigate(`/results/${sessionId}`);
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(sessionChannel);
       supabase.removeChannel(objectsChannel);
+      supabase.removeChannel(expertsChannel);
     };
   }, [sessionId, navigate]);
 
@@ -324,13 +371,45 @@ const Voting = () => {
           )}
 
           {session.status === 'voting' && objects.length > 0 && isAdmin && (
-            <div className="text-center py-8">
-              <p className="text-lg text-muted-foreground">
-                Администраторы не могут голосовать
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Вы можете только наблюдать за процессом голосования
-              </p>
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <p className="text-lg text-muted-foreground">
+                  Администраторы не могут голосовать
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Вы можете только наблюдать за процессом голосования
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold mb-4">Эксперты</h3>
+                <div className="space-y-2">
+                  {allExperts.map((exp) => (
+                    <div 
+                      key={exp.id} 
+                      className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
+                    >
+                      <span className="font-medium">{exp.nickname}</span>
+                      {exp.has_voted ? (
+                        <span className="text-sm text-green-600 dark:text-green-400">✓ Проголосовал</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Ожидание...</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    Проголосовало: {allExperts.filter(e => e.has_voted).length} из {allExperts.length}
+                  </p>
+                  <Button
+                    onClick={() => navigate(`/results/${sessionId}`)}
+                    variant="default"
+                  >
+                    Посмотреть результаты
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
