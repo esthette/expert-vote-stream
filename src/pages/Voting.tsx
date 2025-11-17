@@ -77,24 +77,27 @@ const Voting = () => {
         setSession(sessionData);
         
         // Check if user is admin
-        setIsAdmin(sessionData.created_by === user.id);
+        const userIsAdmin = sessionData.created_by === user.id;
+        setIsAdmin(userIsAdmin);
 
-        // Fetch expert record
-        const { data: expertData, error: expertError } = await supabase
-          .from('experts')
-          .select('*')
-          .eq('session_id', sessionId)
-          .eq('user_id', user.id)
-          .single();
+        // If not admin, fetch expert record
+        if (!userIsAdmin) {
+          const { data: expertData, error: expertError } = await supabase
+            .from('experts')
+            .select('*')
+            .eq('session_id', sessionId)
+            .eq('user_id', user.id)
+            .single();
 
-        if (expertError) {
-          console.error('Error fetching expert:', expertError);
-          toast.error("Вы не являетесь участником этой сессии");
-          navigate('/join');
-          return;
+          if (expertError) {
+            console.error('Error fetching expert:', expertError);
+            toast.error("Вы не являетесь участником этой сессии");
+            navigate('/join');
+            return;
+          }
+
+          setExpert(expertData);
         }
-
-        setExpert(expertData);
 
         // Fetch all experts for admin view
         const { data: allExpertsData, error: allExpertsError } = await supabase
@@ -284,7 +287,7 @@ const Voting = () => {
     );
   }
 
-  if (!session || !expert) return null;
+  if (!session) return null;
 
   const methodNames: Record<string, string> = {
     ranking: "Ранжирование с расчетом коэффициента конкордации",
